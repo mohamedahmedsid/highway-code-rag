@@ -1,0 +1,4 @@
+ollama
+numpy
+requests
+beautifulsoup4

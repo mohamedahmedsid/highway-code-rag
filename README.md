@@ -1,0 +1,81 @@
+# UK Highway Code Assistant
+
+A retrieval-augmented generation (RAG) assistant that answers questions about the UK Highway Code. Every answer is generated from the retrieved rules only and cites the rule it relies on, with a link to the official source on gov.uk. The system runs entirely on a local machine using open models via Ollama, so no data is sent to third-party services.
+
+> **Disclaimer:** This is an educational practice tool. It is not official guidance and does not constitute legal advice. Always verify answers against the cited rule on [gov.uk](https://www.gov.uk/guidance/the-highway-code).
+
+## Features
+
+- Answers grounded in the Highway Code text, with rule-level citations
+- Refuses to answer when the retrieved material does not contain the answer, rather than guessing
+- Streaming responses for faster perceived response time
+- Fully local: no API keys, accounts or usage costs
+
+## Architecture
+
+| Stage | Script | Description |
+|---|---|---|
+| Ingestion | `download_highway_code.py` | Downloads the Highway Code sections from gov.uk, including tables |
+| Chunking | `make_chunks.py` | Splits the text into one chunk per numbered rule; very long rules are divided with overlap |
+| Embedding | `embed_chunks.py` | Generates vector embeddings for each chunk using `nomic-embed-text` |
+| Retrieval | `retrieve.py` | Embeds the question and returns the most similar rules by cosine similarity |
+| Generation | `chatbot.py` | Passes the retrieved rules to `llama3.2:3b` with instructions to answer only from them and to cite rule numbers |
+
+## Design decisions
+
+**Rule-based chunking.** An initial implementation split the text into fixed-size chunks. Testing showed that a query such as "What is the national speed limit for cars on a motorway?" failed to retrieve the speed limits table, because the table was separated from its heading and rule number. Chunking by numbered rule keeps each rule's text, tables and notes together, which resolved the issue and also enables exact rule-level citations.
+
+**Table extraction.** The first version of the ingestion script discarded table content. Table rows are now captured and preserved, as key information such as speed limits is only presented in tables.
+
+**Grounded answers with refusal.** The system prompt restricts the model to the supplied extracts and defines a fixed refusal message for out-of-scope questions, which reduces the risk of unsupported answers.
+
+## Installation
+
+**Prerequisites:** Python 3.10 or later and [Ollama](https://ollama.com).
+
+1. Pull the required models:
+
+   ```
+   ollama pull llama3.2:3b
+   ollama pull nomic-embed-text
+   ```
+
+2. Create and activate a virtual environment, then install the dependencies:
+
+   ```
+   pip install -r requirements.txt
+   ```
+
+3. Build the knowledge base (run once, in this order):
+
+   ```
+   python download_highway_code.py
+   python make_chunks.py
+   python embed_chunks.py
+   ```
+
+4. Start the assistant:
+
+   ```
+   python chatbot.py
+   ```
+
+## Limitations
+
+- A small local language model may occasionally produce inaccurate or incomplete answers. Users should check the cited rule.
+- Some sections (for example, traffic signs and road markings) are image-based and are not fully represented in the text data.
+- The assistant is not affiliated with the DVSA and does not use the official theory test question bank.
+
+## Roadmap
+
+- [ ] Practice quiz mode generated from Highway Code rules
+- [ ] Web interface
+- [ ] Systematic evaluation using a test set of questions and expected answers
+
+## Data and licence
+
+The Highway Code text is Crown copyright and is used under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). The data is not redistributed in this repository; it is downloaded from gov.uk by the ingestion script.
+
+## Author
+
+[mohamedahmedsid](https://github.com/mohamedahmedsid)
