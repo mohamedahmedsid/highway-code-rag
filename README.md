@@ -60,11 +60,11 @@ A retrieval-augmented generation (RAG) assistant that answers questions about th
    ```
    python chatbot.py
    ```
-Or run the web interface with 
+   Or run the web interface with 
 
-   ```
-   streamlit run app.py
-   ```
+      ```
+       streamlit run app.py
+      ```
 ## Limitations
 
 - A small local language model may occasionally produce inaccurate or incomplete answers. Users should check the cited rule.
